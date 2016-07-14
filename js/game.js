@@ -3,7 +3,8 @@
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var diver = new player("red");
-var dx = 1; //for testing
+var INIT_HEIGHT = 10000; //initial height for testing
+var ht = new heightTracker();
 var speedUp;
 var slowDown;
 var glideLeft;
@@ -12,7 +13,6 @@ var glideRight;
 //Controls
 document.addEventListener("keydown",keyDownHandler, false);
 document.addEventListener("keyup",keyUpHandler,false);
-
 
 function keyDownHandler(e){
 	//freefall controls
@@ -58,22 +58,24 @@ function keyUpHandler(e){
 
 //initialize character and update
 function player(color){
+	//TODO: replace width,height, ctx fill stuff with diver image
 	this.width = 30;
 	this.height = 30;
-	this.x = 50;
-	this.y = 50;
+	this.x = 90; 
+	this.y = 100;
 	this.update = function(){
-		//console.log("updating player");
-		if(speedUp){
+		//can only speed up slow down above 2000 ft
+		if(speedUp && ht.height > 2000){
 			this.y += 2;
 		}
-		else if(slowDown){
+		else if(slowDown && ht.height > 2000){
 			this.y -= 2;
 		}
-		else if(glideLeft){
+		//can only glide at or below 2000 ft
+		else if(glideLeft && ht.height <= 2000){
 			this.x -= 2;
 		}
-		else if(glideRight){
+		else if(glideRight && ht.height <= 2000){
 			this.x += 2;
 		}
 		ctx.fillStyle = color;
@@ -81,6 +83,21 @@ function player(color){
 	}
 }
 
+//Keeps track of height 
+function heightTracker(){
+	this.height = INIT_HEIGHT;
+	this.x = 650;
+	this.y = 30;
+	this.update = function(){
+		this.height -= 10; //for testing purposes
+		if(this.height <= 0){
+			this.height = 0;
+		}
+		ctx.font = "30px Silkscreen"
+		ctx.fillStyle = "#666666"
+		ctx.fillText("Height: "+this.height,this.x, this.y);
+	}
+}
 //Setting up canvas, will help with setting different themes
 function setupCanvas(){
 	//console.log("setup canvas");
@@ -97,12 +114,12 @@ function drawMap(){
 //begin game
 function startGame(){
 	setupCanvas();
-	setInterval(updateGame,30);
+	setInterval(updateGame,17); //~60 fps
 }
 
 function updateGame() {
 	updateCanvas();
-	
+	ht.update();
 	diver.update();
 }
 
