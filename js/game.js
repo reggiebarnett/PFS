@@ -2,11 +2,11 @@
 
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
-var diver = new player("red");
-var INIT_HEIGHT = 5000; //initial height for testing
-var LOW_LIMIT = 2000;
 var DIVER_START_X = 90;
 var DIVER_START_Y = 100;
+var INIT_HEIGHT = 5000; //initial height for testing
+var LOW_LIMIT = 2000;
+var diver = new player("red");
 var ht = new heightTracker();
 var speedUp;
 var slowDown;
@@ -141,11 +141,11 @@ function heightTracker(){
 	this.x = 650;
 	this.y = 30;
 	this.update = function(){
-		this.height -= 10; //for testing purposes
+		//this.height -= 10; //for testing purposes
 		if(this.height <= 0){
 			this.height = 0;
 		}
-		ctx.font = "30px Silkscreen"
+		ctx.font = "30px Shitballs"
 		ctx.fillStyle = "#666666"
 		ctx.fillText("Height: "+this.height,this.x, this.y);
 	}
