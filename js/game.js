@@ -2,12 +2,16 @@
 
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
-var DIVER_START_X = 90;
-var DIVER_START_Y = 100;
 var INIT_HEIGHT = 5000; //initial height for testing
 var LOW_LIMIT = 2000;
-var diver = new player("red");
-var ht = new heightTracker();
+var DIVER_START_X = 90;
+var DIVER_START_Y = 100;
+var SLOW_POS_X = 150;
+var SLOW_POS_Y = 70;
+var SPEED_POS_X = 120;
+var SPEED_POS_Y = 160;
+var diver = new Diver("red");
+var ht = new HeightTracker();
 var speedUp;
 var slowDown;
 var glideLeft;
@@ -19,21 +23,20 @@ document.addEventListener("keydown",keyDownHandler, false);
 document.addEventListener("keyup",keyUpHandler,false);
 
 function keyDownHandler(e){
-	//freefall controls
-		//TODO: disable once parachute deploys, WIP
+	//freefall keys
 	if(e.keyCode == 38 || e.keyCode == 87){ //up arrow or w
+		//prevents resetting position when gliding
 		if(ht.height > LOW_LIMIT){
 			slowDown = true;
 		}
 	} 
 	else if(e.keyCode == 40 || e.keyCode == 83){ //down arrow or s
+		//prevents resetting position when gliding
 		if(ht.height > LOW_LIMIT){
 			speedUp = true;
 		}
-
 	} 
-	//parachute controls
-		//TODO: enable once parachute deploys, WIP
+	//parachute keys
 	else if(e.keyCode == 37 || e.keyCode == 65){ //left arrow or a
 		glideLeft = true;
 	} 
@@ -43,25 +46,14 @@ function keyDownHandler(e){
 }
 
 function keyUpHandler(e){
-	//freefall controls
-		//TODO: disable once parachute deploys, WIP
+	//freefall keys
 	if(e.keyCode == 38 || e.keyCode == 87){ //up arrow or w
 		slowDown = false;
-		//Prevent resetting after passing LOW_LIMIT
-		if(ht.height > LOW_LIMIT){
-			diving_actions("return");
-		}
 	} 
 	else if(e.keyCode == 40 || e.keyCode == 83){ //down arrow or s
 		speedUp = false;
-		//Prevent resetting after passing LOW_LIMIT
-		if(ht.height > LOW_LIMIT){
-			diving_actions("return");
-		}
-
 	} 
-	//parachute controls
-		//TODO: enable once parachute deploys, WIP
+	//parachute keys
 	else if(e.keyCode == 37 || e.keyCode == 65){ //left arrow or a
 		glideLeft = false;
 	} 
@@ -70,82 +62,69 @@ function keyUpHandler(e){
 	} 
 }
 
-//calculating movements for slowing down and speeding up
-function diving_actions(action) {
-	if(action === "slow"){
-		//X pos
-		diver.x = 150;
-		//Y pos
-		diver.y = 70;
-	}
-	else if(action === "speed"){
-		//X pos
-		diver.x = 120;
-		//Y pos
-		diver.y = 160;
-	}
-	else if(action === "return"){
-		//return to original position
-		diver.x = DIVER_START_X;
-		diver.y = DIVER_START_Y;
-	}
-}
-
-
-
-
-//initialize character and update
-function player(color){
+//Diver constructor
+function Diver(color){
 	//TODO: replace width,height, ctx fill stuff with diver image
 	this.width = 30;
 	this.height = 30;
+	this.color = color;
 	this.x = DIVER_START_X; 
 	this.y = DIVER_START_Y;
-	ctx.fillStyle = color;
+	this.x_vel = 0;
+	this.y_vel = 0;
+	ctx.fillStyle = this.color;
 	ctx.fillRect(this.x,this.y, this.width,this.height);
-	this.update = function(){
-		//can only speed up slow down above LOW_LIMIT
-		if(speedUp){
-			//temp fix until I figure out better way to prevent holding down buttons
-			if(ht.height <= LOW_LIMIT){
-				diving_actions("return");
-			}
-			if(ht.height > LOW_LIMIT){
-				diving_actions("speed");
-			}
-		}
-		else if(slowDown){
-			//temp fix until I figure out better way to prevent holding down buttons
-			if(ht.height <= LOW_LIMIT){
-				diving_actions("return");
-			}
-			if(ht.height > LOW_LIMIT){
-				diving_actions("slow");
-			}
-		}
-		//can only glide at or below LOW_LIMIT
-		else if(glideLeft && ht.height <= LOW_LIMIT){
-			this.x -= 2;
-		}
-		else if(glideRight && ht.height <= LOW_LIMIT){
-			this.x += 2;
-		}
-		ctx.fillStyle = color;
-		ctx.fillRect(this.x,this.y, this.width,this.height);
+}
+
+//handles updates for player
+Diver.prototype.update = function(){
+	//temp fix, figure out better way to prevent holding down buttons || diver can continue to return after key is released
+	if((ht.height <= LOW_LIMIT && (speedUp || slowDown)) || (ht.height > LOW_LIMIT && !speedUp && !slowDown)){
+		this.dive_move(DIVER_START_X,DIVER_START_Y);
 	}
+	else if(ht.height > LOW_LIMIT && slowDown){
+		this.dive_move(SLOW_POS_X,SLOW_POS_Y);
+	}
+	else if(ht.height > LOW_LIMIT && speedUp){
+		this.dive_move(SPEED_POS_X,SPEED_POS_Y);
+	}
+	//can only glide at or below LOW_LIMIT
+	else if(glideLeft && ht.height <= LOW_LIMIT){
+		this.x -= 2;
+	}
+	else if(glideRight && ht.height <= LOW_LIMIT){
+		this.x += 2;
+	}
+	ctx.fillStyle = this.color;
+	ctx.fillRect(this.x,this.y, this.width,this.height);
+}
+
+//calculating movements for slowing down and speeding up
+Diver.prototype.dive_move = function(x_pos,y_pos){
+	//temp, make more accurate
+	this.x_vel = (x_pos - this.x)/10;
+	this.y_vel = (y_pos - this.y)/10;
+	this.x += this.x_vel;
+	this.y += this.y_vel;
+	//console.log("x: "+this.x+" y: "+this.y);
+}
+
+//calculation movements for gliding left and right
+Diver.prototype.glide_move = function(action){
+
 }
 
 //Keeps track of height 
-function heightTracker(){
+function HeightTracker(){
 	this.height = INIT_HEIGHT;
 	this.x = 650;
 	this.y = 30;
 	this.update = function(){
-		//this.height -= 10; //for testing purposes
+		this.height -= 10; //for testing purposes
 		if(this.height <= 0){
 			this.height = 0;
 		}
-		ctx.font = "30px Shitballs"
+		ctx.font = "30px Silkscreen"
 		ctx.fillStyle = "#666666"
 		ctx.fillText("Height: "+this.height,this.x, this.y);
 	}
