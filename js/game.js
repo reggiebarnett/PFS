@@ -3,22 +3,23 @@
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var INIT_HEIGHT = 5000; //initial height for testing
-var LOW_LIMIT = 2000;
-var DIVER_START_X = 90;
-var DIVER_START_Y = 100;
-var SLOW_POS_X = 150;
-var SLOW_POS_Y = 70;
-var SPEED_POS_X = 120;
-var SPEED_POS_Y = 160;
-var GLIDE_MAX = 5;
-var CHANGE_DIR = .95; //used for easing into changing direction, no sharp direction change
+var LOW_LIMIT = 2000;	//limit where chute will deploy
+var DIVER_START_X = 90;	//start position of diver
+var DIVER_START_Y = 100;//
+var SLOW_POS_X = 150;	//position of diver when slowing down
+var SLOW_POS_Y = 70;	//
+var SPEED_POS_X = 120;	//position of diver when speeding up
+var SPEED_POS_Y = 160;	//
+var GLIDE_MAX = 5;		//max speed when gliding
+var CHANGE_DIR = .95; 	//used for easing into changing direction, no sharp direction change
+var speedUp;			//booleans for key handling
+var slowDown;			//
+var glideLeft;			//
+var glideRight;			//
+var DIVE_SPEED = 10;	//Speed at which diver falls
+
 var diver = new Diver("red");
 var ht = new HeightTracker();
-var speedUp;
-var slowDown;
-var glideLeft;
-var glideRight;
-var DIVE_ACCEL = 3;
 
 //Controls
 document.addEventListener("keydown",keyDownHandler, false);
@@ -94,12 +95,15 @@ Diver.prototype.update = function(){
 	else if((glideLeft || glideRight) && ht.height <= LOW_LIMIT){ 
 		this.glide_move();
 	}
-	//keys are released, slow velocity down
+	//keys are released while gliding, slow velocity down
 	else if(Math.abs(this.x_vel) > 0 && ht.height <= LOW_LIMIT){
 		this.x_vel *= CHANGE_DIR;
 		this.x += this.x_vel;
-
 	}
+	/*moves diver back to correct y pos if not at it once LOW_LIMIT is passed #### works but too jumpy atm
+	if(this.y != DIVER_START_Y && ht.height <= LOW_LIMIT){
+		this.y = DIVER_START_Y;
+	}*/
 	//checking bounds
 	if(this.x <= 70){
 		this.x = 70;
@@ -114,11 +118,31 @@ Diver.prototype.update = function(){
 
 //calculating movements for slowing down and speeding up
 Diver.prototype.dive_move = function(x_pos,y_pos){
-	//temp, make more accurate
 	this.x_vel = (x_pos - this.x)/10;
 	this.y_vel = (y_pos - this.y)/10;
 	this.x += this.x_vel;
 	this.y += this.y_vel;
+	//for accuracy, when diver gets close to diving position, just set to certain position
+	//helps with collision detection (I think)
+	//TODO: handle holding multiple keys down
+	if(speedUp && (SPEED_POS_X - this.x < .5)){
+		this.x = SPEED_POS_X;
+	}
+	if(speedUp && (SPEED_POS_Y - this.y < .5)){
+		this.y = SPEED_POS_Y;
+	}
+	if(slowDown && (SLOW_POS_X - this.x < .5)){
+		this.x = SLOW_POS_X;
+	}
+	if(slowDown && (this.y - SLOW_POS_Y < .5)){
+		this.y = SLOW_POS_Y;
+	}
+	if(x_pos === DIVER_START_X && (this.x - DIVER_START_X < .5)){
+		this.x = DIVER_START_X;
+	}
+	if(y_pos === DIVER_START_Y && (Math.abs(this.y - DIVER_START_Y) < .5)){
+		this.y = DIVER_START_Y;
+	}
 	//console.log("x: "+this.x+" y: "+this.y);
 }
 
@@ -144,21 +168,44 @@ Diver.prototype.glide_move = function(){
 	}
 }
 
-//Keeps track of height 
+//Constructor, keeps track of height used for later calculations 
 function HeightTracker(){
 	this.height = INIT_HEIGHT;
 	this.x = 650;
 	this.y = 30;
-	this.update = function(){
-		//this.height -= 10; //for testing purposes
-		if(this.height <= 0){
-			this.height = 0;
-		}
-		ctx.font = "30px Silkscreen"
-		ctx.fillStyle = "#666666"
-		ctx.fillText("Height: "+this.height,this.x, this.y);
-	}
+	ctx.font = "30px Silkscreen"
+	ctx.fillStyle = "#666666"
+	ctx.fillText("Height: "+this.height,this.x, this.y);
 }
+
+HeightTracker.prototype.update = function(){
+	//testing, will change DIVE_SPEED in future
+	if(speedUp && this.height > LOW_LIMIT){ //speeding up
+		this.height -= DIVE_SPEED*2;
+		//console.log(DIVE_SPEED*2);
+	}
+	else if(slowDown && this.height > LOW_LIMIT){ //slowing down
+		this.height -= DIVE_SPEED/2;
+		//console.log(DIVE_SPEED/2);
+	}
+	else if(this.height > LOW_LIMIT){ //default falling
+		this.height -= DIVE_SPEED; 
+		//console.log(DIVE_SPEED);
+	}
+	else{ //below LOW_LIMIT
+		this.height -= DIVE_SPEED/10;
+		//console.log(DIVE_SPEED/10);
+	}
+	//can't fall through ground
+	if(this.height <= 0){
+		this.height = 0;
+	}
+	ctx.font = "30px Silkscreen"
+	ctx.fillStyle = "#666666"
+	ctx.fillText("Height: "+this.height,this.x, this.y);
+
+}
+
 //Setting up canvas, will help with setting different themes
 function setupCanvas(){
 	//console.log("setup canvas");
@@ -190,5 +237,3 @@ function updateCanvas() {
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 }
-
-
