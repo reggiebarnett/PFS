@@ -10,6 +10,8 @@ var SLOW_POS_X = 150;
 var SLOW_POS_Y = 70;
 var SPEED_POS_X = 120;
 var SPEED_POS_Y = 160;
+var GLIDE_MAX = 5;
+var CHANGE_DIR = .95; //used for easing into changing direction, no sharp direction change
 var diver = new Diver("red");
 var ht = new HeightTracker();
 var speedUp;
@@ -89,12 +91,23 @@ Diver.prototype.update = function(){
 		this.dive_move(SPEED_POS_X,SPEED_POS_Y);
 	}
 	//can only glide at or below LOW_LIMIT
-	else if(glideLeft && ht.height <= LOW_LIMIT){
-		this.x -= 2;
+	else if((glideLeft || glideRight) && ht.height <= LOW_LIMIT){ 
+		this.glide_move();
 	}
-	else if(glideRight && ht.height <= LOW_LIMIT){
-		this.x += 2;
+	//keys are released, slow velocity down
+	else if(Math.abs(this.x_vel) > 0 && ht.height <= LOW_LIMIT){
+		this.x_vel *= CHANGE_DIR;
+		this.x += this.x_vel;
+
 	}
+	//checking bounds
+	if(this.x <= 70){
+		this.x = 70;
+	}
+	else if(this.x >= canvas.width - 100){
+		this.x = canvas.width - 100;
+	}
+
 	ctx.fillStyle = this.color;
 	ctx.fillRect(this.x,this.y, this.width,this.height);
 }
@@ -110,8 +123,25 @@ Diver.prototype.dive_move = function(x_pos,y_pos){
 }
 
 //calculation movements for gliding left and right
-Diver.prototype.glide_move = function(action){
-
+Diver.prototype.glide_move = function(){
+	if(glideLeft){
+		if(this.x_vel > -GLIDE_MAX){
+			this.x_vel--;
+			if(this.x_vel < -GLIDE_MAX){
+				this.x_vel = -GLIDE_MAX;
+			}
+		}
+		this.x += this.x_vel;
+	}
+	else if(glideRight){
+		if(this.x_vel < GLIDE_MAX){
+			this.x_vel++;
+			if(this.x_vel > GLIDE_MAX){
+				this.x_vel = GLIDE_MAX;
+			}
+		}
+		this.x += this.x_vel;
+	}
 }
 
 //Keeps track of height 
@@ -120,7 +150,7 @@ function HeightTracker(){
 	this.x = 650;
 	this.y = 30;
 	this.update = function(){
-		this.height -= 10; //for testing purposes
+		//this.height -= 10; //for testing purposes
 		if(this.height <= 0){
 			this.height = 0;
 		}
