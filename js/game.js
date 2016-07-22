@@ -2,7 +2,9 @@
 
 var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
-var INIT_HEIGHT = 5000; //initial height for testing
+var CAN_W = 900; //for testing
+var CAN_H = 600; //
+var INIT_HEIGHT = 700; //initial height for testing
 var LOW_LIMIT = 2000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
@@ -17,9 +19,12 @@ var slowDown;			//
 var glideLeft;			//
 var glideRight;			//
 var DIVE_SPEED = 10;	//Speed at which diver falls
+var DESCEND = 400;		//Height diver begins approaching ground
 
 var diver = new Diver("red");
 var ht = new HeightTracker();
+var target = new Target();
+var cloud = new Cloud();
 
 //Controls
 document.addEventListener("keydown",keyDownHandler, false);
@@ -110,6 +115,10 @@ Diver.prototype.update = function(){
 	}
 	else if(this.x >= canvas.width - 100){
 		this.x = canvas.width - 100;
+	}
+	//check if diver is at/below DESCEND and begin to lower position
+	if(ht.height <= DESCEND && ht.height > 0){
+		this.y += 1;
 	}
 
 	ctx.fillStyle = this.color;
@@ -206,17 +215,30 @@ HeightTracker.prototype.update = function(){
 
 }
 
-//Setting up canvas, will help with setting different themes
-function setupCanvas(){
-	//console.log("setup canvas");
-	ctx.canvas.width = 900;
-	ctx.canvas.height = 600;
-	ctx.fillStyle = "#80D4FF";
-	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+//Landing target, rough for now
+function Target(){
+	//temp target
+	this.x = 550;
+	this.y = 600;
+	this.length = 100;
+	this.thickness = 20;
+	this.height = 70;
+	ctx.fillStyle = "#663300";
+	ctx.fillRect(this.x,this.y,this.thickness,this.height);
+	ctx.fillRect(this.x+100,this.y,this.thickness,this.height);
+	ctx.fillRect(this.x,this.y,this.length,this.thickness);
+
 }
 
-function drawMap(){
-
+//once a low enough height is reached, target will scroll up into screen
+Target.prototype.appear = function(){
+	if(this.y >= 600-this.height){
+		this.y--;
+	}
+	ctx.fillStyle = "#663300";
+	ctx.fillRect(this.x,this.y,this.thickness,this.height);
+	ctx.fillRect(this.x+100,this.y,this.thickness,this.height);
+	ctx.fillRect(this.x,this.y,this.length,this.thickness);
 }
 
 //begin game
@@ -229,6 +251,20 @@ function updateGame() {
 	updateCanvas();
 	ht.update();
 	diver.update();
+	if(ht.height <= DESCEND){
+		target.appear();
+	}
+}
+
+//Setting up canvas, will help with setting different themes
+function setupCanvas(){
+	//Background "sky"
+	ctx.canvas.width = 900;
+	ctx.canvas.height = 600;
+	ctx.fillStyle = "#80D4FF";
+	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+	//Background entities clouds, hills, etc
+	cloud.update();
 }
 
 function updateCanvas() {
@@ -236,4 +272,37 @@ function updateCanvas() {
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
+	//update
+	cloud.update();
+}
+
+//background clouds
+function Cloud(){
+	//circle for now
+	this.rad = 70;
+	this.centerX = CAN_W+this.rad;
+	this.centerY = CAN_H/2;
+	//drawing
+	ctx.beginPath();
+	ctx.arc(this.centerX,this.centerY,this.rad,0,2*Math.PI,false);
+	ctx.fillStyle = "white";
+	ctx.fill();
+}
+
+Cloud.prototype.update = function(){
+	this.centerX --;
+	if(this.centerX < -this.rad){
+		this.centerX = CAN_W+this.rad;
+	}
+	if(ht.height > DESCEND-target.height){
+		this.centerY -= 0.5;
+		if(this.centerY < -this.rad){
+			this.centerY = CAN_H+this.rad;
+		}
+	}
+	//drawing
+	ctx.beginPath();
+	ctx.arc(this.centerX,this.centerY,this.rad,0,2*Math.PI,false);
+	ctx.fillStyle = "white";
+	ctx.fill();
 }
