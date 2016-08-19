@@ -4,7 +4,7 @@ var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var CAN_W = 900; //for testing
 var CAN_H = 600; //
-var INIT_HEIGHT = 700; //initial height for testing
+var INIT_HEIGHT = 5000; //initial height for testing
 var LOW_LIMIT = 2000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
@@ -24,7 +24,8 @@ var DESCEND = 400;		//Height diver begins approaching ground
 var diver = new Diver("red");
 var ht = new HeightTracker();
 var target = new Target();
-var cloud = new Cloud();
+var cloud = new Sprite("cloud.png");
+//var clouds = new Clouds();
 
 //Controls
 document.addEventListener("keydown",keyDownHandler, false);
@@ -243,6 +244,7 @@ Target.prototype.appear = function(){
 
 //begin game
 function startGame(){
+	//preload();
 	setupCanvas();
 	setInterval(updateGame,17); //~60 fps
 }
@@ -276,33 +278,63 @@ function updateCanvas() {
 	cloud.update();
 }
 
-//background clouds
-function Cloud(){
-	//circle for now
-	this.rad = 70;
-	this.centerX = CAN_W+this.rad;
-	this.centerY = CAN_H/2;
-	//drawing
-	ctx.beginPath();
-	ctx.arc(this.centerX,this.centerY,this.rad,0,2*Math.PI,false);
-	ctx.fillStyle = "white";
-	ctx.fill();
+//constructor for sprites
+function Sprite(file){
+	this.x = CAN_W;
+	this.y = CAN_H/2;
+	this.image = null;
+	if(file != undefined && file != "" && file != null){
+		this.image = new Image();
+		this.image.src = "assets/img/"+file;
+	}else{
+		console.log("unable to load sprite: "+file);
+	}
+	this.draw = function(){
+		ctx.drawImage(this.image,this.x,this.y,this.image.width,this.image.height);
+	}
+	this.update = function(){
+		this.x--;
+		if(this.x < -this.image.width){
+			this.x = CAN_W;
+		}
+		if(ht.height > DESCEND-target.height){
+			this.y -= 0.5;
+			if(ht.height > LOW_LIMIT){//clouds move faster 
+				this.y-= 2;
+			}
+			if(this.y < -this.image.height){
+				this.y = CAN_H;
+			}
+		}
+		this.draw();
+	}
+
 }
 
-Cloud.prototype.update = function(){
-	this.centerX --;
-	if(this.centerX < -this.rad){
-		this.centerX = CAN_W+this.rad;
+//background clouds
+/*function Clouds(){
+	this.x = CAN_W/2;
+	this.y = CAN_H/2;
+
+	ctx.drawImage(cloud,this.x,this.y);
+}
+
+Clouds.prototype.update = function(){
+	this.x--;
+	if(this.x < 0){
+		this.x = CAN_W;
 	}
-	if(ht.height > DESCEND-target.height){
+	/*if(ht.height > DESCEND-target.height){
 		this.centerY -= 0.5;
 		if(this.centerY < -this.rad){
 			this.centerY = CAN_H+this.rad;
 		}
-	}
+	}*/
 	//drawing
-	ctx.beginPath();
-	ctx.arc(this.centerX,this.centerY,this.rad,0,2*Math.PI,false);
-	ctx.fillStyle = "white";
-	ctx.fill();
-}
+	//ctx.drawImage(cloud,this.x,this.y);
+//}
+
+/*function preload(){
+	console.log("in preload");
+	cloud.src = "assests/img/cloud.png";
+}*/
