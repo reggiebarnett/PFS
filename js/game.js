@@ -25,6 +25,7 @@ var diver = new Diver("red");
 var ht = new HeightTracker();
 var target = new Target();
 var cloud = new Sprite("cloud.png");
+var clouds = [];
 //var clouds = new Clouds();
 
 //Controls
@@ -266,7 +267,10 @@ function setupCanvas(){
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//Background entities clouds, hills, etc
-	cloud.update();
+	cloudGen();
+	for(i=0;i<clouds.length;i++){
+		clouds[i].update();
+	}	
 }
 
 function updateCanvas() {
@@ -275,13 +279,15 @@ function updateCanvas() {
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//update
-	cloud.update();
+	for(i=0;i<clouds.length;i++){
+		clouds[i].update();
+	}	
 }
 
 //constructor for sprites
 function Sprite(file){
-	this.x = CAN_W;
-	this.y = CAN_H/2;
+	this.x = null;
+	this.y = null;
 	this.image = null;
 	if(file != undefined && file != "" && file != null){
 		this.image = new Image();
@@ -289,6 +295,7 @@ function Sprite(file){
 	}else{
 		console.log("unable to load sprite: "+file);
 	}
+	//will be moved evenutually
 	this.draw = function(){
 		ctx.drawImage(this.image,this.x,this.y,this.image.width,this.image.height);
 	}
@@ -312,6 +319,15 @@ function Sprite(file){
 }
 
 //background clouds
+
+function cloudGen(){
+	var cloudAmt = 5; //make random
+	for(i=0;i<cloudAmt;i++){
+		clouds[i] = new Sprite("cloud.png");
+		clouds[i].x = i*150; //make random
+		clouds[i].y = i*100;
+	}
+}
 /*function Clouds(){
 	this.x = CAN_W/2;
 	this.y = CAN_H/2;
