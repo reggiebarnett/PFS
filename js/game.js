@@ -4,7 +4,7 @@ var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var CAN_W = 900; //for testing
 var CAN_H = 600; //
-var INIT_HEIGHT = 5000; //initial height for testing
+var INIT_HEIGHT = 500; //initial height for testing
 var LOW_LIMIT = 2000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
@@ -21,12 +21,10 @@ var glideRight;			//
 var DIVE_SPEED = 10;	//Speed at which diver falls
 var DESCEND = 400;		//Height diver begins approaching ground
 
-var diver = new Diver("red");
+var diver = new Diver("green");
 var ht = new HeightTracker();
-var target = new Target();
-var cloud = new Sprite("cloud.png");
+var target;
 var clouds = [];
-//var clouds = new Clouds();
 
 //Controls
 document.addEventListener("keydown",keyDownHandler, false);
@@ -217,32 +215,6 @@ HeightTracker.prototype.update = function(){
 
 }
 
-//Landing target, rough for now
-function Target(){
-	//temp target
-	this.x = 550;
-	this.y = 600;
-	this.length = 100;
-	this.thickness = 20;
-	this.height = 70;
-	ctx.fillStyle = "#663300";
-	ctx.fillRect(this.x,this.y,this.thickness,this.height);
-	ctx.fillRect(this.x+100,this.y,this.thickness,this.height);
-	ctx.fillRect(this.x,this.y,this.length,this.thickness);
-
-}
-
-//once a low enough height is reached, target will scroll up into screen
-Target.prototype.appear = function(){
-	if(this.y >= 600-this.height){
-		this.y--;
-	}
-	ctx.fillStyle = "#663300";
-	ctx.fillRect(this.x,this.y,this.thickness,this.height);
-	ctx.fillRect(this.x+100,this.y,this.thickness,this.height);
-	ctx.fillRect(this.x,this.y,this.length,this.thickness);
-}
-
 //begin game
 function startGame(){
 	//preload();
@@ -254,9 +226,6 @@ function updateGame() {
 	updateCanvas();
 	ht.update();
 	diver.update();
-	if(ht.height <= DESCEND){
-		target.appear();
-	}
 }
 
 //Setting up canvas, will help with setting different themes
@@ -267,10 +236,12 @@ function setupCanvas(){
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//Background entities clouds, hills, etc
+	placeTarget(550,600);
 	cloudGen();
 	for(i=0;i<clouds.length;i++){
 		clouds[i].update();
-	}	
+	}
+	
 }
 
 function updateCanvas() {
@@ -281,6 +252,9 @@ function updateCanvas() {
 	//update
 	for(i=0;i<clouds.length;i++){
 		clouds[i].update();
+	}
+	if(ht.height <= DESCEND){
+		target.appear();
 	}	
 }
 
@@ -288,69 +262,73 @@ function updateCanvas() {
 function Sprite(file){
 	this.x = null;
 	this.y = null;
+	this.h = null;
+	this.w = null;
 	this.image = null;
 	if(file != undefined && file != "" && file != null){
 		this.image = new Image();
 		this.image.src = "assets/img/"+file;
+		this.h = this.image.height;
+		this.w = this.image.width;
 	}else{
 		console.log("unable to load sprite: "+file);
 	}
-	//will be moved evenutually
-	this.draw = function(){
-		ctx.drawImage(this.image,this.x,this.y,this.image.width,this.image.height);
+	this.draw = function(width,height){
+		ctx.drawImage(this.image,this.x,this.y,width,height);
 	}
+
+}
+//Landing target
+function Target(){
+	//once a low enough height is reached, target will scroll up into screen
+	this.appear = function(){
+		if(this.y >= 565-this.h){
+			this.y--;
+		}
+		this.draw(this.w*1.5,this.h);
+	}
+}
+
+Target.prototype = new Sprite("target.png");
+Target.prototype.constructor = Target;
+
+function placeTarget(x,y){
+	target = new Target();
+	target.x = x;
+	target.y = y;
+}
+
+
+//background clouds
+function Cloud(){
 	this.update = function(){
 		this.x--;
-		if(this.x < -this.image.width){
+		if(this.x < -this.w){
 			this.x = CAN_W;
+			this.y = Math.floor((Math.random()*(CAN_H+100))-100);
 		}
-		if(ht.height > DESCEND-target.height){
+		if(ht.height > DESCEND-target.h){ 
 			this.y -= 0.5;
 			if(ht.height > LOW_LIMIT){//clouds move faster 
 				this.y-= 2;
 			}
-			if(this.y < -this.image.height){
+			if(this.y < -this.h){
 				this.y = CAN_H;
 			}
 		}
-		this.draw();
+		this.draw(this.w*.75,this.h*.75);
 	}
-
 }
 
-//background clouds
+Cloud.prototype = new Sprite("cloud.png");
+Cloud.prototype.constructor = Cloud;
 
 function cloudGen(){
-	var cloudAmt = 5; //make random
+	var cloudAmt = Math.floor((Math.random()*10)+10);
+	console.log(cloudAmt);
 	for(i=0;i<cloudAmt;i++){
-		clouds[i] = new Sprite("cloud.png");
-		clouds[i].x = i*150; //make random
-		clouds[i].y = i*100;
+		clouds[i] = new Cloud();
+		clouds[i].x = Math.floor((Math.random()*(CAN_W+1))); 
+		clouds[i].y = Math.floor((Math.random()*(CAN_H+100))-100);
 	}
 }
-/*function Clouds(){
-	this.x = CAN_W/2;
-	this.y = CAN_H/2;
-
-	ctx.drawImage(cloud,this.x,this.y);
-}
-
-Clouds.prototype.update = function(){
-	this.x--;
-	if(this.x < 0){
-		this.x = CAN_W;
-	}
-	/*if(ht.height > DESCEND-target.height){
-		this.centerY -= 0.5;
-		if(this.centerY < -this.rad){
-			this.centerY = CAN_H+this.rad;
-		}
-	}*/
-	//drawing
-	//ctx.drawImage(cloud,this.x,this.y);
-//}
-
-/*function preload(){
-	console.log("in preload");
-	cloud.src = "assests/img/cloud.png";
-}*/
