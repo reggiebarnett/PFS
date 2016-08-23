@@ -4,7 +4,7 @@ var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var CAN_W = 900; //for testing
 var CAN_H = 600; //
-var INIT_HEIGHT = 800; //initial height for testing
+var INIT_HEIGHT = 10000; //initial height for testing
 var LOW_LIMIT = 2000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
@@ -120,7 +120,10 @@ Diver.prototype.update = function(){
 	//check if diver can descend to target position
 	if(DESCEND && ht.height > 0){
 		this.y++;
-
+	}
+	//prevents movement after hitting 0 height
+	if(ht.height === 0){
+		this.x_vel = 0;
 	}
 
 	ctx.fillStyle = this.color;
@@ -158,7 +161,7 @@ Diver.prototype.dive_move = function(x_pos,y_pos){
 
 //calculation movements for gliding left and right
 Diver.prototype.glide_move = function(){
-	if(glideLeft){
+	if(glideLeft && ht.height > 0){
 		if(this.x_vel > -GLIDE_MAX){
 			this.x_vel--;
 			if(this.x_vel < -GLIDE_MAX){
@@ -167,7 +170,7 @@ Diver.prototype.glide_move = function(){
 		}
 		this.x += this.x_vel;
 	}
-	else if(glideRight){
+	else if(glideRight && ht.height > 0){
 		if(this.x_vel < GLIDE_MAX){
 			this.x_vel++;
 			if(this.x_vel > GLIDE_MAX){
@@ -309,13 +312,21 @@ function Cloud(){
 	this.update = function(){
 		this.x--;
 		if(this.x < -this.w){
-			this.x = CAN_W;
+			this.x = CAN_W+Math.floor(Math.random()*50);
 			this.y = Math.floor((Math.random()*(CAN_H+100))-100);
 		}
 		if(!DESCEND){ 
-			this.y -= 0.5;
-			if(ht.height > LOW_LIMIT){//clouds move faster 
+			if(ht.height > LOW_LIMIT && speedUp){ //fast clouds
+				this.y -= 4;
+			}
+			else if(ht.height > LOW_LIMIT && slowDown){ //slow clouds
+				this.y--;
+			}
+			else if(ht.height > LOW_LIMIT){//default 
 				this.y-= 2;
+			}
+			else{//gliding cloud speed
+				this.y -= 0.5;
 			}
 			if(this.y < -this.h){
 				this.y = CAN_H;
@@ -330,10 +341,10 @@ Cloud.prototype.constructor = Cloud;
 
 function cloudGen(){
 	var cloudAmt = Math.floor((Math.random()*10)+10);
-	console.log(cloudAmt);
+	//console.log(cloudAmt);
 	for(i=0;i<cloudAmt;i++){
 		clouds[i] = new Cloud();
-		clouds[i].x = Math.floor((Math.random()*(CAN_W+1))); 
+		clouds[i].x = Math.floor((Math.random()*(CAN_W+100))-100); 
 		clouds[i].y = Math.floor((Math.random()*(CAN_H+100))-100);
 	}
 }
