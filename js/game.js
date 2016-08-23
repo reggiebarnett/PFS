@@ -4,7 +4,7 @@ var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var CAN_W = 900; //for testing
 var CAN_H = 600; //
-var INIT_HEIGHT = 500; //initial height for testing
+var INIT_HEIGHT = 800; //initial height for testing
 var LOW_LIMIT = 2000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
@@ -19,7 +19,8 @@ var slowDown;			//
 var glideLeft;			//
 var glideRight;			//
 var DIVE_SPEED = 10;	//Speed at which diver falls
-var DESCEND = 400;		//Height diver begins approaching ground
+var DESCEND = false;	//Diver approaching ground
+var TARGET_RISE = 0;	//Height target will rise up from canvas, different each round
 
 var diver = new Diver("green");
 var ht = new HeightTracker();
@@ -116,9 +117,10 @@ Diver.prototype.update = function(){
 	else if(this.x >= canvas.width - 100){
 		this.x = canvas.width - 100;
 	}
-	//check if diver is at/below DESCEND and begin to lower position
-	if(ht.height <= DESCEND && ht.height > 0){
-		this.y += 1;
+	//check if diver can descend to target position
+	if(DESCEND && ht.height > 0){
+		this.y++;
+
 	}
 
 	ctx.fillStyle = this.color;
@@ -152,7 +154,6 @@ Diver.prototype.dive_move = function(x_pos,y_pos){
 	if(y_pos === DIVER_START_Y && (Math.abs(this.y - DIVER_START_Y) < .5)){
 		this.y = DIVER_START_Y;
 	}
-	//console.log("x: "+this.x+" y: "+this.y);
 }
 
 //calculation movements for gliding left and right
@@ -236,7 +237,7 @@ function setupCanvas(){
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//Background entities clouds, hills, etc
-	placeTarget(550,600);
+	placeTarget(550,600,100);
 	cloudGen();
 	for(i=0;i<clouds.length;i++){
 		clouds[i].update();
@@ -245,7 +246,6 @@ function setupCanvas(){
 }
 
 function updateCanvas() {
-	//console.log("updating canvas");
 	ctx.clearRect(0,0,canvas.width,canvas.height);
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
@@ -253,7 +253,7 @@ function updateCanvas() {
 	for(i=0;i<clouds.length;i++){
 		clouds[i].update();
 	}
-	if(ht.height <= DESCEND){
+	if(ht.height <= CAN_H - DIVER_START_Y - diver.height/2){
 		target.appear();
 	}	
 }
@@ -282,8 +282,12 @@ function Sprite(file){
 function Target(){
 	//once a low enough height is reached, target will scroll up into screen
 	this.appear = function(){
-		if(this.y >= 565-this.h){
+		if(TARGET_RISE > 0){
 			this.y--;
+			TARGET_RISE--;
+			if(TARGET_RISE === 0){
+				DESCEND = true;
+			}
 		}
 		this.draw(this.w*1.5,this.h);
 	}
@@ -292,10 +296,11 @@ function Target(){
 Target.prototype = new Sprite("target.png");
 Target.prototype.constructor = Target;
 
-function placeTarget(x,y){
+function placeTarget(x,y,TR){
 	target = new Target();
 	target.x = x;
 	target.y = y;
+	TARGET_RISE = TR;
 }
 
 
@@ -307,7 +312,7 @@ function Cloud(){
 			this.x = CAN_W;
 			this.y = Math.floor((Math.random()*(CAN_H+100))-100);
 		}
-		if(ht.height > DESCEND-target.h){ 
+		if(!DESCEND){ 
 			this.y -= 0.5;
 			if(ht.height > LOW_LIMIT){//clouds move faster 
 				this.y-= 2;
