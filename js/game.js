@@ -4,8 +4,8 @@ var canvas = document.getElementById("gameCanvas");
 var ctx = canvas.getContext("2d");
 var CAN_W = 900; //for testing
 var CAN_H = 600; //
-var INIT_HEIGHT = 10000; //initial height for testing
-var LOW_LIMIT = 2000;	//limit where chute will deploy
+var INIT_HEIGHT = 8000; //initial height for testing
+var LOW_LIMIT = 1000;	//limit where chute will deploy
 var DIVER_START_X = 90;	//start position of diver
 var DIVER_START_Y = 100;//
 var SLOW_POS_X = 150;	//position of diver when slowing down
@@ -119,7 +119,7 @@ Diver.prototype.update = function(){
 	}
 	//check if diver can descend to target position
 	if(DESCEND && ht.height > 0){
-		this.y++;
+		this.y ++;
 	}
 	//prevents movement after hitting 0 height
 	if(ht.height === 0){
@@ -240,7 +240,7 @@ function setupCanvas(){
 	ctx.fillStyle = "#80D4FF";
 	ctx.fillRect(0,0,ctx.canvas.width,ctx.canvas.height);
 	//Background entities clouds, hills, etc
-	placeTarget(550,600,100);
+	placeTarget(500,600,50);
 	cloudGen();
 	for(i=0;i<clouds.length;i++){
 		clouds[i].update();
@@ -317,16 +317,18 @@ function Cloud(){
 		}
 		if(!DESCEND){ 
 			if(ht.height > LOW_LIMIT && speedUp){ //fast clouds
-				this.y -= 4;
+				this.x -= 3;
+				this.y -= 8;
 			}
 			else if(ht.height > LOW_LIMIT && slowDown){ //slow clouds
-				this.y--;
+				this.y -=2;
 			}
 			else if(ht.height > LOW_LIMIT){//default 
-				this.y-= 2;
+				this.x -=2;
+				this.y-= 4;
 			}
 			else{//gliding cloud speed
-				this.y -= 0.5;
+				this.y -= 1;
 			}
 			if(this.y < -this.h){
 				this.y = CAN_H;
